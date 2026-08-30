@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import api_router
 from app.api.ai_router import router as ai_router
+from app.api.data_router import router as data_router
 from app.core.config import settings
 
 
@@ -30,6 +31,9 @@ def create_app() -> FastAPI:
     
     # Include AI analytics router
     app.include_router(ai_router)
+    
+    # Include stock data router
+    app.include_router(data_router)
 
     @app.get("/")
     def root():
