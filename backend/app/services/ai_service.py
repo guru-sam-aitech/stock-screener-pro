@@ -2,11 +2,15 @@
 
 This service produces explainable signals from available fundamentals and price inputs.
 It intentionally does not claim predictive certainty or execute trades.
+
+Now with AUTO-FETCH from data service!
 """
 
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Optional
+
+from app.services.data_service import stock_data_service
 
 
 class AIService:
@@ -28,6 +32,53 @@ class AIService:
             return float(value) if value is not None else default
         except (TypeError, ValueError):
             return default
+
+    def fetch_and_score(self, symbol: str, market: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Auto-fetch fundamentals and score a stock.
+        
+        Args:
+            symbol: Stock symbol (e.g., 'RELIANCE.NS', 'AAPL')
+            market: Optional market hint
+        
+        Returns:
+            Dict with AI score, fundamentals, and analysis
+        """
+        # Auto-fetch fundamentals
+        fundamentals = stock_data_service.fetch_stock_data(symbol, market)
+        
+        if 'error' in fundamentals:
+            return {
+                "error": fundamentals['error'],
+                "symbol": symbol,
+                "message": "Could not fetch data. Please try manual entry."
+            }
+        
+        # Score the fetched data
+        score_result = self.score_stock(fundamentals)
+        
+        # Add fundamentals to result
+        return {
+            **score_result,
+            "fundamentals": {
+                "symbol": fundamentals.get('symbol'),
+                "name": fundamentals.get('name'),
+                "market": fundamentals.get('market'),
+                "current_price": fundamentals.get('current_price'),
+                "pe_ratio": fundamentals.get('pe_ratio'),
+                "pb_ratio": fundamentals.get('pb_ratio'),
+                "roe": fundamentals.get('roe'),
+                "debt_to_equity": fundamentals.get('debt_to_equity'),
+                "revenue_growth": fundamentals.get('revenue_growth'),
+                "profit_growth": fundamentals.get('profit_growth'),
+                "market_cap": fundamentals.get('market_cap'),
+                "dividend_yield": fundamentals.get('dividend_yield'),
+                "sector": fundamentals.get('sector'),
+                "industry": fundamentals.get('industry'),
+            },
+            "data_source": fundamentals.get('source', 'unknown'),
+            "from_cache": fundamentals.get('from_cache', False),
+        }
 
     def score_stock(self, stock: Dict[str, Any]) -> Dict[str, Any]:
         """Return an explainable 0-100 quality score and research stance."""
